@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>店舗問い合わせ AIアシスタント 操作デモ</title>
+<style>
+  :root{
+    --ink:#242424; --sub:#616161; --line:#e1dfdd; --bg:#f5f5f5; --hover:#f3f2f1;
+    --teams:#5b5fc7; --teams-d:#4f52b2; --teams-l:#e8ebfa; --teams-rail:#ebebeb;
+    --ol:#0f6cbd; --ol-l:#ebf3fc; --sp:#038387; --sp-blue:#0f6cbd;
+    --pa:#0066ff; --navy:#16337e; --orange:#e8590c; --green:#107c10; --red:#c50f1f;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:"Segoe UI","Yu Gothic UI","Hiragino Sans","Meiryo",sans-serif;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.55}
+  button{font:inherit;cursor:pointer}
+  /* ── デモ帯 ── */
+  .demobar{background:var(--navy);color:#fff;padding:10px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .demobar strong{font-size:15px;letter-spacing:.02em}
+  .demobar .note{font-size:12px;opacity:.85}
+  .demobar .sp{flex:1}
+  .who{display:flex;align-items:center;gap:8px;font-size:12.5px}
+  .who select{font:inherit;font-size:12.5px;padding:5px 8px;border-radius:4px;border:0}
+  .clock{font-size:12px;background:rgba(255,255,255,.14);padding:4px 10px;border-radius:12px;white-space:nowrap}
+  .clock b{color:#ffe26b}
+  /* ── ガイド ── */
+  .guide{background:#fff;border-bottom:1px solid var(--line);padding:9px 18px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px}
+  .guide .lbl{font-weight:700;color:var(--navy);margin-right:4px}
+  .gstep{display:flex;align-items:center;gap:6px;background:#f4f7fc;border:1px solid #d6e0f0;border-radius:14px;padding:3px 10px 3px 4px;cursor:pointer}
+  .gstep:hover{background:#e9f1fa}
+  .gstep i{font-style:normal;background:var(--navy);color:#fff;border-radius:50%;width:19px;height:19px;display:grid;place-items:center;font-size:11px}
+  .gstep.done{background:#e9f4eb;border-color:#b7dcc0}
+  .gstep.done i{background:var(--green)}
+  .garrow{color:#9aa7bd}
+  /* ── タブ ── */
+  .tabs{display:flex;background:#fff;border-bottom:1px solid var(--line);padding:0 12px;overflow-x:auto}
+  .tab{appearance:none;border:0;background:none;color:var(--sub);padding:11px 16px 9px;white-space:nowrap;border-bottom:3px solid transparent;display:flex;flex-direction:column;align-items:flex-start;gap:1px;position:relative}
+  .tab:hover{background:var(--hover);color:var(--ink)}
+  .tab .t{font-weight:600;font-size:13.5px}
+  .tab .p{font-size:10.5px;color:#8a8886}
+  .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--navy)}
+  .tab .badge{position:absolute;top:6px;right:4px;background:var(--red);color:#fff;border-radius:9px;font-size:10px;min-width:17px;height:17px;display:none;place-items:center;padding:0 4px}
+  .tab .badge.on{display:grid}
+  .view{display:none}
+  .view.on{display:block}
+  .prodbar{display:flex;gap:8px;align-items:center;padding:7px 18px;font-size:12px;color:var(--sub);background:#fafafa;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .chip{display:inline-block;padding:1px 9px;border-radius:10px;font-size:11px;font-weight:600;color:#fff;white-space:nowrap}
+  .c-teams{background:var(--teams)} .c-cs{background:#0b6a50} .c-ol{background:var(--ol)} .c-sp{background:var(--sp)} .c-pa{background:var(--pa)}
+
+  /* ── Teams ── */
+  .teams{display:flex;height:calc(100vh - 205px);min-height:560px;background:#fff}
+  .rail{width:68px;background:var(--teams-rail);display:flex;flex-direction:column;align-items:center;padding-top:8px;gap:4px;flex:none}
+  .ri{width:60px;padding:7px 0;border-radius:6px;display:flex;flex-direction:column;align-items:center;gap:2px;color:#616161;font-size:10px}
+  .ri.on{color:var(--teams);background:#fff}
+  .ri svg{width:20px;height:20px}
+  .clist{width:290px;border-right:1px solid var(--line);flex:none;display:flex;flex-direction:column;background:#fafafa}
+  .clist h3{margin:0;padding:14px 16px 10px;font-size:17px}
+  .csec{font-size:11.5px;color:var(--sub);padding:8px 16px 4px}
+  .citem{display:flex;gap:10px;align-items:center;padding:8px 14px;cursor:pointer;border-radius:4px;margin:0 6px}
+  .citem:hover{background:#f0f0f0}
+  .citem.on{background:#fff;box-shadow:0 0 0 1px #e6e6e6}
+  .citem .nm{font-weight:600;font-size:13px}
+  .citem .pv{font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px}
+  .citem .ub{margin-left:auto;background:var(--red);color:#fff;border-radius:9px;font-size:10px;min-width:17px;height:17px;display:none;place-items:center}
+  .citem .ub.on{display:grid}
+  .citem.dim{opacity:.55;cursor:default}
+  .av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:12px;flex:none}
+  .av.bot{border-radius:8px;background:linear-gradient(135deg,#0b6a50,#2fb38c)}
+  .av.wf{border-radius:8px;background:#0066ff}
+  .av.u1{background:#c4314b} .av.u2{background:#8764b8} .av.u3{background:#ca5010} .av.u4{background:#038387}
+  .cmain{flex:1;display:flex;flex-direction:column;min-width:0}
+  .chead{display:flex;align-items:center;gap:10px;padding:10px 18px;border-bottom:1px solid var(--line)}
+  .chead .nm{font-weight:700;font-size:15px}
+  .chead .tb{font-size:13px;color:var(--teams);border-bottom:2px solid var(--teams);padding:2px 2px 4px;margin-left:10px}
+  .chead .sub{font-size:11.5px;color:var(--sub)}
+  .msgs{flex:1;overflow-y:auto;padding:18px 22px;background:#f5f5f5}
+  .row{display:flex;gap:10px;margin-bottom:16px;align-items:flex-start}
+  .row.me{justify-content:flex-end}
+  .meta{font-size:11.5px;color:var(--sub);margin-bottom:3px}
+  .bub{background:#fff;border-radius:6px;padding:10px 14px;max-width:640px;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .row.me .bub{background:var(--teams-l)}
+  .bub p{margin:0 0 6px}
+  .bub p:last-child{margin-bottom:0}
+  .bub ol,.bub ul{margin:4px 0 6px;padding-left:20px}
+  .cite{display:inline-grid;place-items:center;min-width:16px;height:16px;border-radius:3px;background:#e0e0e0;color:#424242;font-size:10px;font-weight:700;margin:0 2px;vertical-align:1px}
+  .refs{border-top:1px solid #edebe9;margin-top:8px;padding-top:7px}
+  .refs .h{font-size:11.5px;color:var(--sub);margin-bottom:4px}
+  .ref{display:flex;align-items:center;gap:7px;font-size:12.5px;padding:3px 0;color:#0f6cbd}
+  .fi{width:18px;height:18px;border-radius:3px;display:grid;place-items:center;font-size:9px;font-weight:700;color:#fff;flex:none}
+  .fi.w{background:#185abd} .fi.p{background:#c43e1c} .fi.pdf{background:#b30b00} .fi.l{background:#038387}
+  .ai-note{font-size:11px;color:#8a8886;margin-top:6px}
+  .ac{background:#fff;border:1px solid #e0e0e0;border-radius:6px;padding:12px 14px;max-width:640px;margin-top:8px}
+  .ac .q{font-weight:700;margin-bottom:9px;font-size:13.5px}
+  .ac .btns{display:flex;gap:8px;flex-wrap:wrap}
+  .acb{border:1px solid #d1d1d1;background:#fff;border-radius:4px;padding:6px 14px;font-size:13px}
+  .acb:hover{background:#f5f5f5}
+  .acb.pri{background:var(--teams);color:#fff;border-color:var(--teams)}
+  .acb.pri:hover{background:var(--teams-d)}
+  .acb[disabled]{opacity:.5;cursor:default}
+  .ac label{display:flex;gap:7px;align-items:center;padding:3px 0;font-size:13px;cursor:pointer}
+  .ac textarea{width:100%;border:1px solid #d1d1d1;border-radius:4px;padding:7px;font:inherit;font-size:13px;margin:6px 0 9px;min-height:54px}
+  .ac .done{color:var(--green);font-weight:600;font-size:13px}
+  .demo-note{background:#fff8e0;border:1px dashed #e0b400;color:#5c4a00;font-size:12px;padding:6px 10px;border-radius:4px;margin-top:8px;max-width:640px}
+  .divider{text-align:center;font-size:11.5px;color:var(--sub);margin:6px 0 16px}
+  .divider span{background:#f5f5f5;padding:0 10px}
+  .sugg{background:#fff;border-top:1px solid var(--line);padding:7px 22px 2px}
+  .sugg .lb{font-size:11px;color:var(--sub);display:block;margin-bottom:4px}
+  .sgrow{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
+  .sg{border:1px solid #c7c9f1;background:#f5f6fe;color:#3d3fa8;border-radius:14px;padding:4px 11px;font-size:12.5px;white-space:nowrap;flex:none}
+  .sg:hover{background:var(--teams-l)}
+  .compose{display:flex;gap:8px;padding:10px 22px 14px;background:#fff}
+  .compose input{flex:1;border:1px solid #d1d1d1;border-bottom:2px solid var(--teams);border-radius:4px;padding:9px 12px;font:inherit}
+  .compose button{border:0;background:var(--teams);color:#fff;border-radius:4px;padding:0 16px}
+  .typing{font-size:12px;color:var(--sub);padding:0 0 10px 44px;display:none}
+  .typing.on{display:block}
+
+  /* ── Outlook ── */
+  .ol{display:flex;height:calc(100vh - 205px);min-height:560px;background:#fff}
+  .olnav{width:230px;border-right:1px solid var(--line);background:#fafafa;flex:none;padding:10px 0}
+  .olnav .bx{padding:6px 16px;font-size:12px;color:var(--sub);font-weight:600}
+  .olf{padding:7px 16px 7px 26px;font-size:13px;display:flex;justify-content:space-between}
+  .olf.on{background:#e6f0fb;font-weight:700;border-left:3px solid var(--ol);padding-left:23px}
+  .olf b{color:var(--ol)}
+  .ollist{width:360px;border-right:1px solid var(--line);overflow-y:auto;flex:none}
+  .olhd{padding:12px 16px;font-weight:700;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+  .olhd span{font-weight:400;font-size:12px;color:var(--sub)}
+  .mi{padding:10px 16px;border-bottom:1px solid #f0f0f0;cursor:pointer;border-left:3px solid transparent}
+  .mi:hover{background:#f5f5f5}
+  .mi.on{background:#e6f0fb}
+  .mi.unread{border-left-color:var(--ol)}
+  .mi.unread .s{font-weight:700;color:var(--ol)}
+  .mi .f{font-size:13px;font-weight:600;display:flex;justify-content:space-between}
+  .mi .f span{font-weight:400;font-size:11.5px;color:var(--sub)}
+  .mi .s{font-size:12.5px;margin-top:1px}
+  .mi .pv{font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .olread{flex:1;overflow-y:auto;padding:20px 26px;min-width:0}
+  .olread h2{font-size:18px;margin:0 0 12px}
+  .from{display:flex;gap:10px;align-items:center;margin-bottom:16px}
+  .from .av{background:#0066ff;border-radius:50%}
+  .from .n{font-weight:600}
+  .from .a{font-size:12px;color:var(--sub)}
+  .mailbody{border:1px solid var(--line);border-radius:6px;overflow:hidden;max-width:720px}
+  .mailbody .mh{background:#c50f1f;color:#fff;padding:10px 16px;font-weight:700}
+  .mailbody table{width:100%;border-collapse:collapse;font-size:13px}
+  .mailbody th{width:150px;text-align:left;background:#faf9f8;padding:8px 14px;border-bottom:1px solid #f0eeed;vertical-align:top;color:#444}
+  .mailbody td{padding:8px 14px;border-bottom:1px solid #f0eeed}
+  .mailbody .ft{padding:12px 16px;font-size:12px;color:var(--sub)}
+  .linkbtn{display:inline-block;background:var(--ol);color:#fff;border-radius:4px;padding:7px 14px;font-size:13px;border:0;margin-top:4px}
+  .empty{color:var(--sub);padding:40px 10px;text-align:center}
+
+  /* ── SharePoint リスト ── */
+  .sp-head{background:#fff;border-bottom:1px solid var(--line);padding:14px 22px 0}
+  .sp-crumb{font-size:12px;color:var(--sub);margin-bottom:6px}
+  .sp-title{display:flex;align-items:center;gap:10px;margin:0 0 8px}
+  .sp-title h1{font-size:20px;margin:0;font-weight:600}
+  .sp-ico{width:26px;height:26px;border-radius:4px;background:var(--sp);display:grid;place-items:center;color:#fff;font-size:13px}
+  .sp-cmd{display:flex;gap:2px;padding:4px 0 8px;flex-wrap:wrap;align-items:center}
+  .cmd{background:none;border:0;font-size:13px;color:var(--ink);padding:6px 10px;border-radius:4px;display:flex;gap:6px;align-items:center}
+  .cmd:hover{background:var(--hover)}
+  .cmd .g{color:var(--sp-blue)}
+  .views{display:flex;gap:2px;border-top:1px solid #f0eeed;padding-top:2px;flex-wrap:wrap}
+  .vw{background:none;border:0;padding:8px 12px;font-size:13px;color:var(--sub);border-bottom:2px solid transparent}
+  .vw.on{color:var(--ink);font-weight:600;border-bottom-color:var(--sp-blue)}
+  .sp-main{padding:10px 22px 40px;overflow-x:auto}
+  table.sp{width:100%;border-collapse:collapse;background:#fff;font-size:12.5px;min-width:1050px}
+  table.sp th{text-align:left;font-weight:600;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;background:#fff}
+  table.sp td{padding:9px 10px;border-bottom:1px solid #f0eeed;vertical-align:top}
+  table.sp tr.it:hover td{background:var(--hover);cursor:pointer}
+  table.sp tr.new td{animation:flash 2.4s ease}
+  @keyframes flash{0%{background:#fff4ce}100%{background:transparent}}
+  .grp td{background:#faf9f8;font-weight:700;font-size:12.5px;color:#323130}
+  .grp td span{color:var(--sub);font-weight:400}
+  .trunc{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+  .pill{display:inline-block;padding:1px 9px;border-radius:10px;font-size:11.5px;white-space:nowrap}
+  .ok{background:#dff6dd;color:#0b6a0b} .ng{background:#fde7e9;color:#a4262c} .warn{background:#fff4ce;color:#8a5a00}
+  .info{background:#deecf9;color:#004578} .muted{background:#f3f2f1;color:#605e5c} .faqd{background:#e8ebfa;color:#3d3fa8}
+  .idlink{color:var(--sp-blue);font-weight:600}
+  .sp-note{font-size:12px;color:var(--sub);margin:10px 0 0}
+  /* 詳細パネル */
+  .panel-bg{position:fixed;inset:0;background:rgba(0,0,0,.25);display:none;z-index:40}
+  .panel-bg.on{display:block}
+  .panel{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);background:#fff;z-index:41;transform:translateX(100%);transition:transform .2s;display:flex;flex-direction:column;box-shadow:-4px 0 16px rgba(0,0,0,.12)}
+  .panel.on{transform:none}
+  .ph{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+  .ph h3{margin:0;font-size:17px}
+  .ph button{border:0;background:none;font-size:20px;color:var(--sub)}
+  .pb{flex:1;overflow-y:auto;padding:14px 20px}
+  .fld{margin-bottom:12px}
+  .fld .k{font-size:12px;color:var(--sub);margin-bottom:3px}
+  .fld .v{font-size:13.5px;white-space:pre-wrap}
+  .fld select,.fld textarea{width:100%;font:inherit;font-size:13.5px;border:1px solid #c8c6c4;border-radius:3px;padding:6px 8px}
+  .fld textarea{min-height:110px}
+  .fld.edit{background:#f8f9fe;border:1px solid #e1e5f7;border-radius:6px;padding:10px 12px}
+  .tg{display:flex;align-items:center;gap:8px;font-size:13.5px}
+  .pf{padding:12px 20px;border-top:1px solid var(--line);display:flex;gap:8px}
+  .pf .save{background:var(--sp-blue);color:#fff;border:0;border-radius:3px;padding:7px 18px}
+  .pf .cancel{background:#fff;border:1px solid #8a8886;border-radius:3px;padding:7px 18px}
+  .hint{font-size:11.5px;color:#8a5a00;background:#fff8e0;border-radius:4px;padding:5px 8px;margin-top:6px}
+
+  /* ── しくみ ── */
+  .arch{max-width:1100px;margin:0 auto;padding:22px}
+  .arch h2{font-size:18px;margin:6px 0 12px;color:var(--navy)}
+  .flow{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:22px}
+  .fb{background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px;position:relative}
+  .fb .n{font-size:11px;color:var(--sub)}
+  .fb .h{font-weight:700;margin:3px 0 6px;font-size:13.5px}
+  .fb .d{font-size:12px;color:#444}
+  .fb .chip{margin-top:8px}
+  table.map{width:100%;border-collapse:collapse;background:#fff;font-size:13px;border:1px solid var(--line)}
+  table.map th{background:var(--navy);color:#fff;text-align:left;padding:9px 12px;font-weight:600}
+  table.map td{padding:9px 12px;border-bottom:1px solid #eee;vertical-align:top}
+  .caveat{font-size:12.5px;color:#444;background:#fff;border:1px solid var(--line);border-left:4px solid var(--orange);border-radius:4px;padding:12px 14px;margin-top:16px}
+  .caveat li{margin:3px 0}
+
+  /* ── トースト ── */
+  #toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:60;max-width:min(420px,calc(100% - 32px))}
+  .toast{background:#fff;border:1px solid var(--line);border-left:4px solid var(--pa);border-radius:6px;padding:10px 14px;box-shadow:0 4px 14px rgba(0,0,0,.14);font-size:12.5px;animation:tin .25s ease}
+  .toast b{display:block;color:var(--pa);font-size:11.5px;margin-bottom:2px}
+  @keyframes tin{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+
+  @media (max-width:900px){
+    .rail{display:none}
+    .clist{display:none}
+    .olnav{display:none}
+    .ollist{width:42%}
+    .flow{grid-template-columns:1fr 1fr}
+    .teams,.ol{height:auto;min-height:620px}
+    .msgs{min-height:420px}
+  }
+  @media (max-width:600px){
+    .demobar{padding:10px 16px}
+    .guide{padding:8px 16px}
+    .ol{flex-direction:column}
+    .ollist{width:100%;max-height:240px}
+    .olread{padding:16px}
+    .msgs{padding:14px 16px}
+    .sugg,.compose{padding-left:16px;padding-right:16px}
+    .sp-head,.sp-main{padding-left:16px;padding-right:16px}
+    .flow{grid-template-columns:1fr}
+    .arch{padding:16px}
+    .chead .tb,.garrow{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="demobar">
+  <strong>店舗問い合わせ AIアシスタント ― 操作デモ</strong>
+  <span class="note">Microsoft 365（Teams・SharePoint・Outlook）＋ Copilot Studio ＋ Power Automate／表示データはすべてサンプルです</span>
+  <span class="sp"></span>
+  <span class="clock" id="clock"></span>
+  <label class="who">利用者（デモ切替）
+    <select id="userSel">
+      <option value="store">店舗スタッフ：山田 花子（中央店）</option>
+      <option value="hq">本社スタッフ：佐藤 健（人事部）</option>
+    </select>
+  </label>
+</div>
+
+<div class="guide" id="guide">
+  <span class="lbl">おすすめの流れ</span>
+  <span class="gstep" data-go="teams" id="g1"><i>1</i>Teamsで「台風…」を質問し「解決しない」を選ぶ</span><span class="garrow">›</span>
+  <span class="gstep" data-go="outlook" id="g2"><i>2</i>本部共通メールで通知を確認</span><span class="garrow">›</span>
+  <span class="gstep" data-go="log" id="g3"><i>3</i>問い合わせログで回答し、FAQに登録</span><span class="garrow">›</span>
+  <span class="gstep" data-go="teams" id="g4"><i>4</i>Teamsで同じ質問をもう一度</span>
+</div>
+
+<nav class="tabs" role="tablist">
+  <button class="tab" role="tab" aria-selected="true" data-v="teams"><span class="t">① Teams のAIアシスタント</span><span class="p">Microsoft Teams ＋ Copilot Studio</span><span class="badge" id="bTeams"></span></button>
+  <button class="tab" role="tab" aria-selected="false" data-v="outlook"><span class="t">② 本部共通メール</span><span class="p">Outlook（共有メールボックス）</span><span class="badge" id="bOl"></span></button>
+  <button class="tab" role="tab" aria-selected="false" data-v="log"><span class="t">③ 問い合わせログ</span><span class="p">SharePoint リスト</span><span class="badge" id="bLog"></span></button>
+  <button class="tab" role="tab" aria-selected="false" data-v="faq"><span class="t">④ 本部回答FAQ</span><span class="p">SharePoint リスト（AIの参照先）</span></button>
+  <button class="tab" role="tab" aria-selected="false" data-v="arch"><span class="t">しくみ</span><span class="p">どの製品で実現するか</span></button>
+</nav>
+
+<!-- ① Teams -->
+<section class="view on" id="v-teams">
+  <div class="prodbar"><span class="chip c-teams">Microsoft Teams</span><span class="chip c-cs">Copilot Studio エージェント</span>店舗スタッフは普段の Teams から質問します。回答の根拠は SharePoint 上の規程・マニュアルです。</div>
+  <div class="teams">
+    <div class="rail">
+      <div class="ri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6zM10 19a2 2 0 0 0 4 0"/></svg>アクティビティ</div>
+      <div class="ri on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h16v11H9l-5 4z"/></svg>チャット</div>
+      <div class="ri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3 19c0-3 3-5 6-5s6 2 6 5M15 15c3 0 6 1.4 6 4"/></svg>チーム</div>
+      <div class="ri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 9h16M9 3v4M15 3v4"/></svg>カレンダー</div>
+      <div class="ri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>アプリ</div>
+    </div>
+    <div class="clist">
+      <h3>チャット</h3>
+      <div class="csec">ピン留め</div>
+      <div class="citem on" data-chat="bot"><div class="av bot">AI</div><div><div class="nm">本部問い合わせアシスタント</div><div class="pv" id="pvBot">規程・マニュアルについて質問できます</div></div><span class="ub" id="ubBot"></span></div>
+      <div class="citem" data-chat="wf"><div class="av wf">W</div><div><div class="nm">Workflows</div><div class="pv" id="pvWf">本部からの回答が届きます</div></div><span class="ub" id="ubWf"></span></div>
+      <div class="csec">最近</div>
+      <div class="citem dim"><div class="av u3">エ</div><div><div class="nm">エリアマネージャー</div><div class="pv">来週の売場変更の件、了解です</div></div></div>
+      <div class="citem dim"><div class="av u4">店</div><div><div class="nm">中央店 グループ</div><div class="pv">シフト表を更新しました</div></div></div>
+    </div>
+    <div class="cmain">
+      <div class="chead" id="chead"></div>
+      <div class="msgs" id="msgs"></div>
+      <div class="typing" id="typing">本部問い合わせアシスタント が入力しています…</div>
+      <div class="sugg" id="sugg">
+        <span class="lb">デモ用の質問例（クリックで送信。自由入力もできます）</span>
+        <div class="sgrow">
+        <button class="sg">有給休暇の申請は何日前までに出せばいいですか？</button>
+        <button class="sg">レシートがないお客様から返品の申し出がありました。どう対応すればいいですか？</button>
+        <button class="sg">レジの違算が1,000円以上出たときの報告方法は？</button>
+        <button class="sg">台風が接近しているとき、臨時休業は誰が判断しますか？</button>
+        <button class="sg">人事評価の最終調整会議の進め方を教えてください</button>
+        <button class="sg">結婚祝い金の申請に必要な書類は？</button>
+        </div>
+      </div>
+      <form class="compose" id="compose"><input id="q" placeholder="メッセージを入力" autocomplete="off"><button type="submit">送信</button></form>
+    </div>
+  </div>
+</section>
+
+<!-- ② Outlook -->
+<section class="view" id="v-outlook">
+  <div class="prodbar"><span class="chip c-ol">Outlook</span><span class="chip c-pa">Power Automate が送信</span>「解決しない」が選ばれると、本部共通メール（共有メールボックス）に通知が届きます。</div>
+  <div class="ol">
+    <div class="olnav">
+      <div class="bx">本部共通（共有メールボックス）</div>
+      <div class="olf on">受信トレイ <b id="olCnt"></b></div>
+      <div class="olf">送信済みアイテム</div>
+      <div class="olf">対応済み</div>
+      <div class="bx" style="margin-top:12px">個人のメールボックス</div>
+      <div class="olf">受信トレイ</div>
+    </div>
+    <div class="ollist"><div class="olhd">受信トレイ <span>honbu-toiawase@example.com</span></div><div id="mlist"></div></div>
+    <div class="olread" id="mread"><div class="empty">メッセージを選択してください</div></div>
+  </div>
+</section>
+
+<!-- ③ ログ -->
+<section class="view" id="v-log">
+  <div class="prodbar"><span class="chip c-sp">SharePoint リスト</span><span class="chip c-pa">Power Automate が自動で記録</span>すべての質問と回答を1行ずつ記録します。標準の会話記録と違い、回答本文も期間の制限なく残ります。</div>
+  <div class="sp-head">
+    <div class="sp-crumb">本部ポータル ＞ リスト</div>
+    <div class="sp-title"><div class="sp-ico">≡</div><h1>問い合わせログ</h1></div>
+    <div class="sp-cmd">
+      <button class="cmd"><span class="g">＋</span>新規</button>
+      <button class="cmd"><span class="g">✎</span>グリッド ビューで編集</button>
+      <button class="cmd"><span class="g">⇪</span>エクスポート</button>
+      <button class="cmd"><span class="g">⚡</span>自動化</button>
+    </div>
+    <div class="views" id="logViews">
+      <button class="vw on" data-view="all">すべてのアイテム</button>
+      <button class="vw" data-view="todo">要対応</button>
+      <button class="vw" data-view="group">対応状況別</button>
+      <button class="vw" data-view="off">営業時間外</button>
+    </div>
+  </div>
+  <div class="sp-main">
+    <table class="sp"><thead><tr>
+      <th>受付番号</th><th>日時</th><th>店舗・部署</th><th>質問者</th><th>質問</th><th>AIの回答（冒頭）</th><th>評価</th><th>理由</th><th>対応状況</th><th>時間帯</th>
+    </tr></thead><tbody id="logBody"></tbody></table>
+    <p class="sp-note">行をクリックすると詳細が開き、本部の回答を入力できます。「要対応」ビューは、評価が「解決しない」で未回答のものだけを表示します。</p>
+  </div>
+</section>
+
+<!-- ④ FAQ -->
+<section class="view" id="v-faq">
+  <div class="prodbar"><span class="chip c-sp">SharePoint リスト</span><span class="chip c-cs">Copilot Studio のナレッジに登録</span>本部が確認した回答を蓄積します。このリストは AI の参照先（ナレッジ）に追加されており、次の質問から回答の根拠になります。</div>
+  <div class="sp-head">
+    <div class="sp-crumb">本部ポータル ＞ リスト</div>
+    <div class="sp-title"><div class="sp-ico">?</div><h1>本部回答FAQ</h1></div>
+    <div class="sp-cmd">
+      <button class="cmd"><span class="g">＋</span>新規</button>
+      <button class="cmd"><span class="g">✎</span>グリッド ビューで編集</button>
+      <button class="cmd"><span class="g">⚡</span>自動化</button>
+    </div>
+    <div class="views"><button class="vw on">すべてのアイテム</button></div>
+  </div>
+  <div class="sp-main">
+    <table class="sp"><thead><tr>
+      <th>質問</th><th>本部の回答</th><th>所管部署</th><th>公開範囲</th><th>登録日</th><th>元の受付番号</th>
+    </tr></thead><tbody id="faqBody"></tbody></table>
+  </div>
+</section>
+
+<!-- しくみ -->
+<section class="view" id="v-arch">
+  <div class="arch">
+    <h2>流れと製品の対応</h2>
+    <div class="flow">
+      <div class="fb"><div class="n">STEP 1</div><div class="h">店舗が質問</div><div class="d">Teams のチャットで質問。本社の営業時間外も利用できる。</div><span class="chip c-teams">Teams</span></div>
+      <div class="fb"><div class="n">STEP 2</div><div class="h">AIが回答</div><div class="d">SharePoint 上の規程・マニュアル・FAQ から、閲覧権限の範囲内で回答。出典を表示。</div><span class="chip c-cs">Copilot Studio</span></div>
+      <div class="fb"><div class="n">STEP 3</div><div class="h">ログに記録</div><div class="d">質問・回答・出典・評価を SharePoint リストに1行ずつ記録。</div><span class="chip c-pa">Power Automate</span></div>
+      <div class="fb"><div class="n">STEP 4</div><div class="h">本部へ通知</div><div class="d">「解決しない」なら本部共通メールへ通知。店舗には個別回答の案内を表示。</div><span class="chip c-pa">Power Automate</span></div>
+      <div class="fb"><div class="n">STEP 5</div><div class="h">回答・FAQ化</div><div class="d">本部がログに回答。質問者へ Teams で通知し、FAQ に登録すると次から AI が回答。</div><span class="chip c-sp">SharePoint</span></div>
+    </div>
+    <h2>機能ごとの実現方法（Microsoft 365 の標準機能）</h2>
+    <table class="map">
+      <thead><tr><th style="width:22%">機能</th><th style="width:24%">製品</th><th>実現方法</th></tr></thead>
+      <tbody>
+        <tr><td>規程・マニュアルを根拠に回答</td><td>Copilot Studio</td><td>SharePoint のサイト／リストをナレッジに追加。AIの一般知識・Web検索は使わない設定にし、文書にない質問には推測で答えない</td></tr>
+        <tr><td>店舗／本社の権限分け</td><td>SharePoint ＋ Microsoft Entra ID</td><td>SharePoint のアクセス権をグループで設定。閲覧権限のない文書は、その利用者への回答の根拠に使われない（製品仕様）</td></tr>
+        <tr><td>評価ボタン（解決した／解決しない）</td><td>Copilot Studio</td><td>回答の後に評価を尋ねるトピック（選択肢またはアダプティブカード）</td></tr>
+        <tr><td>質問と回答のログ</td><td>Copilot Studio ＋ Power Automate</td><td>回答本文をトピックで受け取り、エージェントフローで SharePoint リストに書き込む（SharePoint 参照時、標準の会話記録には回答本文が残らないため）</td></tr>
+        <tr><td>本部共通メールへの通知</td><td>Power Automate</td><td>Office 365 Outlook コネクタ「共有メールボックスからメールを送信する (V2)」（標準コネクタ）</td></tr>
+        <tr><td>本部回答の通知・FAQ登録</td><td>Power Automate ＋ SharePoint リスト</td><td>ログの更新をきっかけに、質問者へ Teams で通知。FAQ に登録したリストを Copilot Studio のナレッジとして参照</td></tr>
+      </tbody>
+    </table>
+    <div class="caveat">
+      <b>このデモについて</b>
+      <ul>
+        <li>画面は説明用に再現したイメージです。実際の画面は Microsoft の製品の表示に準じます。</li>
+        <li>AIの回答文・規程の内容・店舗名・氏名はすべて架空のサンプルです。</li>
+        <li>実装方式の詳細（トピックの構成・フローの分け方など）は PoC で確定します。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<div class="panel-bg" id="panelBg"></div>
+<aside class="panel" id="panel" aria-label="アイテムの詳細">
+  <div class="ph"><h3 id="pTitle"></h3><button id="pClose" aria-label="閉じる">×</button></div>
+  <div class="pb" id="pBody"></div>
+  <div class="pf"><button class="save" id="pSave">保存</button><button class="cancel" id="pCancel">キャンセル</button></div>
+</aside>
+
+<div id="toasts"></div>
+
+<script>
+(function(){
+  "use strict";
+  // ───────── サンプルの知識（規程・マニュアル） ─────────
+  const DOCS = {
+    K1:{name:"就業規則（2026年4月改定）第24条", t:"w", scope:"all"},
+    K2:{name:"勤怠システム操作マニュアル p.6「休暇の事後申請」", t:"pdf", scope:"all"},
+    K3:{name:"店舗運営マニュアル 第5章「返品・交換」", t:"w", scope:"all"},
+    K4:{name:"店舗運営マニュアル 第3章「レジ業務」", t:"w", scope:"all"},
+    K5:{name:"慶弔見舞金規程 第4条・第6条", t:"pdf", scope:"all"},
+    K6:{name:"人事評価 運用要領（本社限定）第8条", t:"w", scope:"hq"},
+    K7:{name:"経費精算規程 第5条", t:"pdf", scope:"all"},
+    FQ:{name:"本部回答FAQ", t:"l", scope:"all"}
+  };
+  const INTENTS = [
+    {id:"typhoon", kw:["台風","臨時休業","休業"]},
+    {id:"eval", kw:["評価","調整会議","査定"]},
+    {id:"paid", kw:["有給","有休","休暇"]},
+    {id:"return", kw:["返品","交換","レシート"]},
+    {id:"register", kw:["違算","レジ"]},
+    {id:"keicho", kw:["慶弔","祝い金","見舞金","結婚"]},
+    {id:"expense", kw:["経費","精算","交通費"]},
+    {id:"uniform", kw:["制服","ユニフォーム"]}
+  ];
+  const ANS = {
+    paid:{docs:["K1","K2"], html:
+      "<p>有給休暇は、<b>取得希望日の3営業日前まで</b>に勤怠システムから申請してください<span class='cite'>1</span>。店長の承認後に確定します。</p>"+
+      "<p>急な体調不良などで当日に取得する場合は、始業前に店長へ連絡のうえ、出勤後（または次の出勤日）に事後申請を行います<span class='cite'>2</span>。</p>",
+      plain:"有給休暇は、取得希望日の3営業日前までに勤怠システムから申請してください。店長の承認後に確定します…"},
+    return:{docs:["K3"], html:
+      "<p>レシートがない場合でも、次の3点を確認できれば返品・交換を受け付けられます<span class='cite'>1</span>。</p>"+
+      "<ol><li>当社店舗で販売した商品であること（値札・商品タグ・POSの販売履歴で確認）</li><li>購入から30日以内であること（会員の方は購入履歴で確認）</li><li>未使用であること</li></ol>"+
+      "<p>確認できない場合は、店長の判断で商品券での対応とし、返品記録票に理由を記入してください<span class='cite'>1</span>。</p>",
+      plain:"レシートがない場合でも、次の3点を確認できれば返品・交換を受け付けられます…"},
+    register:{docs:["K4"], html:
+      "<p>1,000円以上の違算が出た場合は、<b>当日中に</b>次の手順で報告します<span class='cite'>1</span>。</p>"+
+      "<ol><li>2名で再精算する</li><li>「レジ違算報告書」を作成し、店長が確認する</li><li>エリアマネージャーへ報告し、報告書を経理部の共有フォルダへ格納する</li></ol>"+
+      "<p>同じレジで3回以上続く場合は、エリアマネージャーが原因の聞き取りを行います<span class='cite'>1</span>。</p>",
+      plain:"1,000円以上の違算が出た場合は、当日中に次の手順で報告します…"},
+    keicho:{docs:["K5"], html:
+      "<p>結婚祝い金の申請には、次の2点が必要です<span class='cite'>1</span>。</p>"+
+      "<ol><li>慶弔見舞金申請書</li><li>婚姻の事実が確認できる書類（婚姻届受理証明書の写しなど）</li></ol>"+
+      "<p>事由の発生から<b>3か月以内</b>に、店長を経由して総務部へ提出してください<span class='cite'>1</span>。</p>",
+      plain:"結婚祝い金の申請には、慶弔見舞金申請書と婚姻の事実が確認できる書類が必要です…"},
+    expense:{docs:["K7"], html:
+      "<p>交通費・備品購入などの経費は、<b>発生月の翌月5日まで</b>に経費精算システムから申請してください<span class='cite'>1</span>。領収書の原本は、店舗の経費ファイルに保管します。</p>",
+      plain:"交通費・備品購入などの経費は、発生月の翌月5日までに経費精算システムから申請してください…"},
+    uniform:{docs:["FQ"], faqTitle:"制服の追加貸与の申請方法", html:
+      "<p>制服の追加貸与は、店長が「備品申請フォーム」から総務部へ申請します<span class='cite'>1</span>。サイズ交換も同じフォームで受け付けており、通常は申請から1週間程度で店舗に届きます<span class='cite'>1</span>。</p>",
+      plain:"制服の追加貸与は、店長が「備品申請フォーム」から総務部へ申請します…"},
+    eval:{docs:["K6"], html:
+      "<p>最終調整会議は、各部門の一次評価が揃った後に<b>人事部が主催</b>して実施します<span class='cite'>1</span>。</p>"+
+      "<ol><li>人事部が評価分布の一覧を事前に配布する</li><li>部門長が評価の根拠を説明する</li><li>分布の偏りを調整し、最終評価を確定する</li><li>議事録は人事部が保管する</li></ol>",
+      plain:"最終調整会議は、各部門の一次評価が揃った後に人事部が主催して実施します…"},
+    typhoonFaq:{docs:["FQ"], faqTitle:"台風接近時の臨時休業の判断", html:
+      "<p>台風接近時の臨時休業は、<b>エリアマネージャーが判断</b>し、本部（総務部）へ報告します<span class='cite'>1</span>。</p>"+
+      "<p>判断の目安は、①暴風・大雨などの警報の発令、②公共交通機関の運休、③自治体からの避難情報です。迷う場合は、店長からエリアマネージャーへ連絡してください<span class='cite'>1</span>。</p>",
+      plain:"台風接近時の臨時休業は、エリアマネージャーが判断し、本部（総務部）へ報告します…"}
+  };
+  const TYPHOON_HQ_ANSWER = "台風接近時の臨時休業は、エリアマネージャーが判断し、本部（総務部）へ報告してください。\n判断の目安は、①暴風・大雨などの警報の発令、②公共交通機関の運休、③自治体からの避難情報です。迷う場合は、店長からエリアマネージャーへ連絡してください。";
+  const NO_ANSWER_HTML = "<p>ご質問の内容について、閲覧できる規程・マニュアルの中に該当する情報が見つかりませんでした。</p><p>お手数ですが、下の「解決しない」から本部へ送信してください。本部より個別にご回答します。</p>";
+
+  // ───────── 状態 ─────────
+  const USERS = {
+    store:{name:"山田 花子", org:"中央店", av:"山", cls:"u1", group:"店舗メンバー"},
+    hq:{name:"佐藤 健", org:"人事部", av:"佐", cls:"u2", group:"本社メンバー"}
+  };
+  const S = {
+    user:"store", chat:"bot", seq:31, faqTyphoon:false,
+    now:new Date(2027,3,10,20,41),
+    bot:[], wf:[], unreadWf:0, unreadOl:0,
+    logView:"all", openLog:null
+  };
+  const LOGS = [
+    {id:"Q-0408-012", dt:new Date(2027,3,8,10,15), org:"駅前店", who:"松本 翔", q:"アルバイトの交通費の上限はいくらですか？", a:"アルバイトの交通費は、1日あたり往復1,000円を上限に実費を支給します…", src:"経費精算規程 第5条", rate:"解決した", reason:"", status:"自動回答済", dept:"総務部", hq:"", off:false},
+    {id:"Q-0408-019", dt:new Date(2027,3,8,19,48), org:"港町店", who:"高橋 美咲", q:"お客様の忘れ物の保管期間は？", a:"ご質問の内容について、閲覧できる規程・マニュアルの中に該当する情報が見つかりませんでした…", src:"（該当なし）", rate:"解決しない", reason:"該当する情報がない", status:"FAQ反映済", dept:"総務部", hq:"忘れ物は店舗で1か月保管し、その後は所轄の警察署へ届け出てください。高額品・貴重品は当日中に届け出ます。", off:true},
+    {id:"Q-0409-004", dt:new Date(2027,3,9,9,2), org:"東通り店", who:"伊藤 大輔", q:"有給休暇の申請は何日前まで？", a:"有給休暇は、取得希望日の3営業日前までに勤怠システムから申請してください…", src:"就業規則（2026年4月改定）第24条", rate:"解決した", reason:"", status:"自動回答済", dept:"人事部", hq:"", off:false},
+    {id:"Q-0409-015", dt:new Date(2027,3,9,13,30), org:"南店", who:"中村 由衣", q:"制服のサイズ交換はどうすればいいですか？", a:"制服の追加貸与は、店長が「備品申請フォーム」から総務部へ申請します…", src:"本部回答FAQ", rate:"解決した", reason:"", status:"自動回答済", dept:"総務部", hq:"", off:false},
+    {id:"Q-0409-027", dt:new Date(2027,3,9,21,12), org:"駅前店", who:"松本 翔", q:"駐車場でお客様同士の接触事故があった場合の対応は？", a:"ご質問の内容について、閲覧できる規程・マニュアルの中に該当する情報が見つかりませんでした…", src:"（該当なし）", rate:"解決しない", reason:"該当する情報がない", status:"対応中", dept:"総務部", hq:"", off:true},
+    {id:"Q-0410-008", dt:new Date(2027,3,10,10,5), org:"西口店", who:"小林 誠", q:"レジの違算が出たときの報告書はどこにありますか？", a:"1,000円以上の違算が出た場合は、当日中に次の手順で報告します…", src:"店舗運営マニュアル 第3章「レジ業務」", rate:"解決した", reason:"", status:"自動回答済", dept:"経理部", hq:"", off:false},
+    {id:"Q-0410-017", dt:new Date(2027,3,10,15,40), org:"港町店", who:"高橋 美咲", q:"慶弔休暇は何日取れますか？", a:"本人の結婚の場合は5日、配偶者の出産の場合は2日の慶弔休暇を取得できます…", src:"就業規則（2026年4月改定）第27条", rate:"解決しない", reason:"情報が古い", status:"要対応", dept:"人事部", hq:"", off:true},
+    {id:"Q-0410-024", dt:new Date(2027,3,10,18,22), org:"中央店", who:"山田 花子", q:"経費の申請期限はいつですか？", a:"交通費・備品購入などの経費は、発生月の翌月5日までに経費精算システムから申請してください…", src:"経費精算規程 第5条", rate:"未評価", reason:"", status:"自動回答済", dept:"経理部", hq:"", off:true}
+  ];
+  const FAQ = [
+    {q:"制服の追加貸与・サイズ交換の申請方法", a:"店長が「備品申請フォーム」から総務部へ申請します。通常は申請から1週間程度で店舗に届きます。", dept:"総務部", scope:"全員", dt:"2027/3/22", src:"Q-0322-006"},
+    {q:"お客様の忘れ物の保管期間", a:"店舗で1か月保管し、その後は所轄の警察署へ届け出てください。高額品・貴重品は当日中に届け出ます。", dept:"総務部", scope:"全員", dt:"2027/4/9", src:"Q-0408-019"},
+    {q:"店長会議資料の提出先", a:"店長会議の資料は、開催日の2営業日前までに営業企画部の共有フォルダへ格納してください。", dept:"営業企画部", scope:"本社のみ", dt:"2027/4/2", src:"Q-0401-011"}
+  ];
+  const MAILS = [
+    {id:"Q-0410-017", read:true, dt:new Date(2027,3,10,15,41), org:"港町店", who:"高橋 美咲", q:"慶弔休暇は何日取れますか？", a:"本人の結婚の場合は5日、配偶者の出産の場合は2日の慶弔休暇を取得できます…", src:"就業規則（2026年4月改定）第27条", reason:"情報が古い", note:"4月から日数が変わったと聞きました。"},
+    {id:"Q-0409-027", read:true, dt:new Date(2027,3,9,21,13), org:"駅前店", who:"松本 翔", q:"駐車場でお客様同士の接触事故があった場合の対応は？", a:"（該当する情報が見つかりませんでした）", src:"（該当なし）", reason:"該当する情報がない", note:""}
+  ];
+
+  // ───────── ユーティリティ ─────────
+  const $ = (s, r=document) => r.querySelector(s);
+  const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const WD = "日月火水木金土";
+  const pad = n => String(n).padStart(2,"0");
+  const fmt = d => `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}（${WD[d.getDay()]}）${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const fmtS = d => `${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const hm = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const isOff = d => d.getDay()===0 || d.getDay()===6 || d.getHours()<9 || d.getHours()>=17;
+  const tick = (m=1) => { S.now = new Date(S.now.getTime()+m*60000); renderClock(); };
+  const newId = () => { S.seq++; const d=S.now; return `Q-${pad(d.getMonth()+1)}${pad(d.getDate())}-${String(S.seq).padStart(3,"0")}`; };
+  function toast(title, body){
+    const t=document.createElement("div"); t.className="toast";
+    t.innerHTML=`<b>${esc(title)}</b>${esc(body)}`;
+    $("#toasts").appendChild(t);
+    setTimeout(()=>{t.style.transition="opacity .4s";t.style.opacity="0";setTimeout(()=>t.remove(),400)},5200);
+  }
+  function renderClock(){
+    $("#clock").innerHTML = `デモ時刻 ${fmt(S.now)}　本社：${isOff(S.now)?"<b>営業時間外</b>":"営業時間内"}`;
+  }
+
+  // ───────── タブ ─────────
+  function go(v){
+    $$(".tab").forEach(t=>t.setAttribute("aria-selected", t.dataset.v===v ? "true":"false"));
+    $$(".view").forEach(x=>x.classList.toggle("on", x.id==="v-"+v));
+    if(v==="outlook"){ S.unreadOl=0; renderBadges(); }
+    window.scrollTo({top:0});
+  }
+  $$(".tab").forEach(t=>t.addEventListener("click",()=>go(t.dataset.v)));
+  $$(".gstep").forEach(g=>g.addEventListener("click",()=>{ go(g.dataset.go); if(g.id==="g1"||g.id==="g4"){ openChat("bot"); $("#q").value="台風が接近しているとき、臨時休業は誰が判断しますか？"; $("#q").focus(); } }));
+  function renderBadges(){
+    const set=(el,n)=>{el.textContent=n; el.classList.toggle("on", n>0);};
+    set($("#bOl"), S.unreadOl);
+    set($("#bTeams"), S.unreadWf);
+    set($("#ubWf"), S.unreadWf);
+    const todo = LOGS.filter(l=>l.status==="要対応").length;
+    set($("#bLog"), todo);
+    const unreadMails = MAILS.filter(m=>!m.read).length;
+    $("#olCnt").textContent = unreadMails || "";
+  }
+  function stepDone(id){ $("#"+id).classList.add("done"); }
+
+  // ───────── Teams ─────────
+  function openChat(c){
+    S.chat=c;
+    $$(".citem[data-chat]").forEach(x=>x.classList.toggle("on", x.dataset.chat===c));
+    if(c==="wf"){ S.unreadWf=0; renderBadges(); }
+    $("#sugg").style.display = c==="bot" ? "" : "none";
+    $("#compose").style.display = c==="bot" ? "" : "none";
+    renderChat();
+  }
+  $$(".citem[data-chat]").forEach(x=>x.addEventListener("click",()=>openChat(x.dataset.chat)));
+
+  function renderHead(){
+    if(S.chat==="bot"){
+      $("#chead").innerHTML = `<div class="av bot">AI</div><div><div class="nm">本部問い合わせアシスタント</div><div class="sub">Copilot Studio で作成したエージェント／社内規程・マニュアルを根拠に回答します</div></div><span class="tb">チャット</span>`;
+    }else{
+      $("#chead").innerHTML = `<div class="av wf">W</div><div><div class="nm">Workflows</div><div class="sub">Power Automate からの通知（本部からの回答が届きます）</div></div><span class="tb">チャット</span>`;
+    }
+  }
+  function renderChat(){
+    renderHead();
+    const box=$("#msgs");
+    const list = S.chat==="bot" ? S.bot : S.wf;
+    if(!list.length){
+      box.innerHTML = S.chat==="bot"
+        ? `<div class="row"><div class="av bot">AI</div><div><div class="meta">本部問い合わせアシスタント</div><div class="bub"><p>こんにちは。本部の規程・マニュアルについて、24時間いつでもご質問いただけます。</p><p>回答には根拠にした資料を表示します。解決しなかった場合は、本部から個別にご回答します。</p></div></div></div>`
+        : `<div class="empty">本部からの回答はまだありません</div>`;
+      return;
+    }
+    box.innerHTML = list.map(m=>`<div class="m" data-mid="${m.id}">${m.html}</div>`).join("");
+    bindCards();
+    box.scrollTop = box.scrollHeight;
+  }
+  let MID=0;
+  function pushBot(html){ S.bot.push({id:++MID, html}); if(S.chat==="bot") renderChat(); }
+
+  function userRow(text){
+    const u=USERS[S.user];
+    return `<div class="row me"><div><div class="meta" style="text-align:right">${hm(S.now)}</div><div class="bub">${esc(text)}</div></div></div>`;
+  }
+  function refsHtml(docs, faqTitle){
+    if(!docs.length) return "";
+    return `<div class="refs"><div class="h">参照</div>${docs.map((d,i)=>{
+      const D=DOCS[d]; const nm = d==="FQ" ? `本部回答FAQ：${faqTitle||""}` : D.name;
+      return `<div class="ref"><span class="cite">${i+1}</span><span class="fi ${D.t}">${D.t==="w"?"W":D.t==="pdf"?"PDF":D.t==="l"?"≡":"P"}</span>${esc(nm)}</div>`;
+    }).join("")}</div>`;
+  }
+  function evalCard(logId){
+    return `<div class="ac" data-log="${logId}"><div class="q">この回答で解決しましたか？</div><div class="btns"><button class="acb pri" data-act="good">解決した</button><button class="acb" data-act="bad">解決しない</button></div></div>`;
+  }
+  const bigr = t => { const s=t.replace(/[\s？?。、！!]/g,""); const out=new Set(); for(let i=0;i<s.length-1;i++) out.add(s.slice(i,i+2)); return out; };
+  function faqMatch(q){
+    const a=bigr(q); let best=null, sc=0;
+    FAQ.forEach(f=>{ const b=bigr(f.q); let inter=0; a.forEach(x=>{ if(b.has(x)) inter++; }); const j=inter/Math.min(a.size||1,b.size||1); if(j>sc){sc=j;best=f;} });
+    return sc>=0.4 ? best : null;
+  }
+  function detect(q){
+    for(const it of INTENTS){ if(it.kw.some(k=>q.includes(k))) return it.id; }
+    return null;
+  }
+  function ask(text){
+    text=text.trim(); if(!text) return;
+    if(S.chat!=="bot") openChat("bot");
+    tick(1);
+    S.bot.push({id:++MID, html:userRow(text)}); renderChat();
+    $("#typing").classList.add("on");
+    setTimeout(()=>{ $("#typing").classList.remove("on"); respond(text); }, 900);
+  }
+  function respond(text){
+    const intent = detect(text);
+    let key = intent, blocked=false, found=true;
+    if(intent==="typhoon"){ key = S.faqTyphoon ? "typhoonFaq" : null; }
+    if(key && ANS[key].docs.some(d=>DOCS[d].scope==="hq") && S.user!=="hq"){ blocked=true; key=null; }
+    let A = key ? ANS[key] : null;
+    if(!A && !blocked && intent!=="typhoon"){
+      const f = faqMatch(text);
+      if(f && f.scope==="本社のみ" && S.user!=="hq") blocked=true;
+      else if(f) A = {docs:["FQ"], faqTitle:f.q, html:`<p>${esc(f.a)}<span class='cite'>1</span></p>`, plain:f.a.slice(0,40)+"…"};
+    }
+    if(!A) found=false;
+    const id=newId();
+    const u=USERS[S.user];
+    const log = {id, dt:new Date(S.now), org:u.org, who:u.name, q:text,
+      a: found ? A.plain : "ご質問の内容について、閲覧できる規程・マニュアルの中に該当する情報が見つかりませんでした…",
+      src: found ? A.docs.map(d=>d==="FQ"?"本部回答FAQ":DOCS[d].name).join("／") : "（該当なし）",
+      rate:"未評価", reason:"", status: found?"自動回答済":"回答なし", dept: guessDept(intent), hq:"", off:isOff(S.now), isNew:true};
+    LOGS.push(log);
+    let html = `<div class="row"><div class="av bot">AI</div><div><div class="meta">本部問い合わせアシスタント　${hm(S.now)}</div><div class="bub">`;
+    html += found ? A.html + refsHtml(A.docs, A.faqTitle) + `<div class="ai-note">AI によって生成されたコンテンツは誤りを含む可能性があります。</div>` : NO_ANSWER_HTML;
+    html += `</div>`;
+    if(blocked){
+      html += `<div class="demo-note">デモ注記：この質問の根拠となる資料は「本社限定」の範囲にあるため、店舗スタッフへの回答には使われません。画面上部で「本社スタッフ」に切り替えて同じ質問をすると、回答が返ります。</div>`;
+    }
+    if(intent==="typhoon" && S.faqTyphoon){
+      html += `<div class="demo-note">デモ注記：本部が回答し FAQ に登録した内容を根拠に、AI が回答できるようになりました。</div>`;
+      stepDone("g4");
+    }
+    html += evalCard(id) + `</div></div>`;
+    pushBot(html);
+    $("#pvBot").textContent = found ? A.plain : "該当する情報が見つかりませんでした";
+    renderLog(); renderBadges();
+  }
+  function guessDept(intent){
+    return ({paid:"人事部",eval:"人事部",keicho:"総務部",return:"営業企画部",register:"経理部",expense:"経理部",typhoon:"総務部",uniform:"総務部"})[intent] || "総務部";
+  }
+  function bindCards(){
+    $$("#msgs .ac").forEach(card=>{
+      if(card.dataset.bound) return; card.dataset.bound="1";
+      card.addEventListener("click", e=>{
+        const b=e.target.closest("button"); if(!b) return;
+        const log = LOGS.find(l=>l.id===card.dataset.log);
+        if(b.dataset.act==="good"){
+          log.rate="解決した"; tick(1);
+          card.innerHTML=`<div class="done">✓ 評価を記録しました（解決した）。ありがとうございました。</div>`;
+          saveCard(card); renderLog();
+          toast("Power Automate（エージェントフロー）","問い合わせログに評価「解決した」を記録しました");
+        }else if(b.dataset.act==="bad"){
+          card.innerHTML = `<div class="q">ご不便をおかけしました。当てはまる理由を選んでください。</div>
+            <label><input type="radio" name="r-${log.id}" value="情報が古い">情報が古い</label>
+            <label><input type="radio" name="r-${log.id}" value="回答が質問とずれている">回答が質問とずれている</label>
+            <label><input type="radio" name="r-${log.id}" value="該当する情報がない" ${log.status==="回答なし"?"checked":""}>該当する情報がない</label>
+            <label><input type="radio" name="r-${log.id}" value="その他">その他</label>
+            <textarea placeholder="補足（任意）：困っている状況などをご記入ください"></textarea>
+            <div class="btns"><button class="acb pri" data-act="send">本部へ送信</button></div>`;
+          saveCard(card);
+        }else if(b.dataset.act==="send"){
+          const r = card.querySelector("input[type=radio]:checked");
+          const reason = r ? r.value : "その他";
+          const note = card.querySelector("textarea").value.trim();
+          tick(1);
+          log.rate="解決しない"; log.reason=reason; log.status="要対応"; log.note=note;
+          card.innerHTML = `<div class="done">✓ 本部へ送信しました</div>`;
+          saveCard(card);
+          sendAlert(log, note);
+          const u=USERS[S.user];
+          setTimeout(()=>{
+            pushBot(`<div class="row"><div class="av bot">AI</div><div><div class="meta">本部問い合わせアシスタント　${hm(S.now)}</div><div class="bub"><p>本部（${esc(log.dept)}）へ通知しました。</p><p><b>受付番号：${esc(log.id)}</b></p><p>本部より、後ほど個別にご回答します。回答は Teams でお知らせします${isOff(S.now)?"（本部の対応は翌営業日以降になります）":""}。</p></div></div></div>`);
+          }, 500);
+          stepDone("g1");
+        }
+      });
+    });
+  }
+  // カードの現在の状態を保存（再描画で元に戻らないように）
+  function saveCard(card){
+    const w = card.closest("[data-mid]"); if(!w) return;
+    const m = S.bot.find(x=>String(x.id)===w.dataset.mid);
+    if(m) m.html = w.innerHTML.replace(/ data-bound="1"/g,"");
+  }
+  function sendAlert(log, note){
+    MAILS.unshift({id:log.id, read:false, dt:new Date(S.now), org:log.org, who:log.who, q:log.q, a:log.a, src:log.src, reason:log.reason, note});
+    S.unreadOl++;
+    renderMails(); renderLog(); renderBadges();
+    toast("Power Automate（エージェントフロー）", `本部共通メールへ通知しました（${log.id}）`);
+  }
+  $("#compose").addEventListener("submit", e=>{ e.preventDefault(); const v=$("#q").value; $("#q").value=""; ask(v); });
+  $$("#sugg .sg").forEach(b=>b.addEventListener("click",()=>ask(b.textContent)));
+
+  $("#userSel").addEventListener("change", e=>{
+    S.user=e.target.value;
+    const u=USERS[S.user];
+    S.bot.push({id:++MID, html:`<div class="divider"><span>デモ：利用者を ${esc(u.group)}（${esc(u.name)}・${esc(u.org)}）に切り替えました</span></div>`});
+    if(S.chat==="bot") renderChat();
+    toast("デモ切替", `${u.group}としてサインインした状態です。回答に使われる文書の範囲が変わります`);
+  });
+
+  // ───────── Outlook ─────────
+  let curMail=null;
+  function renderMails(){
+    $("#mlist").innerHTML = MAILS.map((m,i)=>`<div class="mi ${m.read?"":"unread"} ${curMail===i?"on":""}" data-i="${i}">
+      <div class="f">AIアシスタント通知 <span>${fmtS(m.dt)}</span></div>
+      <div class="s">【要対応】AI回答「解決しない」${esc(m.id)}</div>
+      <div class="pv">${esc(m.org)}／${esc(m.q)}</div></div>`).join("");
+    $$("#mlist .mi").forEach(el=>el.addEventListener("click",()=>openMail(+el.dataset.i)));
+    renderBadges();
+  }
+  function openMail(i){
+    curMail=i; const m=MAILS[i]; m.read=true;
+    $("#mread").innerHTML = `<h2>【要対応】AI回答「解決しない」${esc(m.id)}</h2>
+      <div class="from"><div class="av">PA</div><div><div class="n">AIアシスタント通知（本部共通）</div><div class="a">送信元：honbu-toiawase@example.com　${fmt(m.dt)}</div></div></div>
+      <div class="mailbody"><div class="mh">店舗からの質問に、AIの回答で解決しなかったものがあります</div>
+      <table>
+        <tr><th>受付番号</th><td><b>${esc(m.id)}</b></td></tr>
+        <tr><th>日時</th><td>${fmt(m.dt)}${isOff(m.dt)?"（本社 営業時間外）":""}</td></tr>
+        <tr><th>店舗・部署／質問者</th><td>${esc(m.org)}／${esc(m.who)}</td></tr>
+        <tr><th>質問</th><td>${esc(m.q)}</td></tr>
+        <tr><th>AIの回答</th><td>${esc(m.a)}</td></tr>
+        <tr><th>参照した資料</th><td>${esc(m.src)}</td></tr>
+        <tr><th>解決しない理由</th><td><span class="pill ng">${esc(m.reason)}</span></td></tr>
+        <tr><th>補足</th><td>${m.note?esc(m.note):"（なし）"}</td></tr>
+      </table>
+      <div class="ft">店舗には「本部より後ほど個別にご回答します」と表示済みです。問い合わせログで回答を入力してください。<br><button class="linkbtn" id="toLog">問い合わせログで開く</button></div></div>`;
+    $("#toLog").addEventListener("click",()=>{ go("log"); openLog(m.id); });
+    renderMails();
+    if(i===0 && MAILS[0].id && !["Q-0410-017","Q-0409-027"].includes(MAILS[0].id)) stepDone("g2");
+  }
+
+  // ───────── 問い合わせログ（SharePoint リスト） ─────────
+  const ratePill = r => r==="解決した"?`<span class="pill ok">解決した</span>`:r==="解決しない"?`<span class="pill ng">解決しない</span>`:`<span class="pill muted">未評価</span>`;
+  const statPill = s => ({"自動回答済":"info","回答なし":"muted","要対応":"ng","対応中":"warn","回答済":"ok","FAQ反映済":"faqd"})[s] ? `<span class="pill ${({"自動回答済":"info","回答なし":"muted","要対応":"ng","対応中":"warn","回答済":"ok","FAQ反映済":"faqd"})[s]}">${s}</span>` : s;
+  function rowHtml(l){
+    return `<tr class="it ${l.isNew?"new":""}" data-id="${l.id}">
+      <td><span class="idlink">${l.id}</span></td><td style="white-space:nowrap">${fmtS(l.dt)}</td><td>${esc(l.org)}</td><td style="white-space:nowrap">${esc(l.who)}</td>
+      <td><span class="trunc" title="${esc(l.q)}">${esc(l.q)}</span></td><td><span class="trunc" style="max-width:220px">${esc(l.a)}</span></td>
+      <td>${ratePill(l.rate)}</td><td>${esc(l.reason)}</td><td>${statPill(l.status)}</td><td>${l.off?`<span class="pill warn">営業時間外</span>`:`<span class="pill muted">営業時間内</span>`}</td></tr>`;
+  }
+  function renderLog(){
+    let rows = LOGS.slice().sort((a,b)=>b.dt-a.dt);
+    let html="";
+    if(S.logView==="todo") rows = rows.filter(l=>l.rate==="解決しない" && (l.status==="要対応"||l.status==="対応中"));
+    if(S.logView==="off") rows = rows.filter(l=>l.off);
+    if(S.logView==="group"){
+      const order=["要対応","対応中","回答済","FAQ反映済","自動回答済","回答なし"];
+      order.forEach(st=>{
+        const g=rows.filter(l=>l.status===st); if(!g.length) return;
+        html += `<tr class="grp"><td colspan="10">対応状況：${st} <span>(${g.length})</span></td></tr>` + g.map(rowHtml).join("");
+      });
+    }else{
+      html = rows.map(rowHtml).join("") || `<tr><td colspan="10" class="empty">表示するアイテムはありません</td></tr>`;
+    }
+    $("#logBody").innerHTML = html;
+    $$("#logBody tr.it").forEach(tr=>tr.addEventListener("click",()=>openLog(tr.dataset.id)));
+    LOGS.forEach(l=>{ if(l.isNew) setTimeout(()=>{l.isNew=false;},2500); });
+    renderBadges();
+  }
+  $$("#logViews .vw").forEach(b=>b.addEventListener("click",()=>{
+    $$("#logViews .vw").forEach(x=>x.classList.toggle("on", x===b)); S.logView=b.dataset.view; renderLog();
+  }));
+  function openLog(id){
+    const l = LOGS.find(x=>x.id===id); if(!l) return;
+    S.openLog=id;
+    $("#pTitle").textContent = `${l.id}　${l.org}`;
+    const isTyphoon = l.q.includes("台風") || l.q.includes("臨時休業");
+    const canEdit = l.rate==="解決しない" || l.status==="要対応" || l.status==="対応中";
+    $("#pBody").innerHTML = `
+      <div class="fld"><div class="k">日時</div><div class="v">${fmt(l.dt)}（${l.off?"営業時間外":"営業時間内"}）</div></div>
+      <div class="fld"><div class="k">店舗・部署／質問者</div><div class="v">${esc(l.org)}／${esc(l.who)}</div></div>
+      <div class="fld"><div class="k">質問</div><div class="v">${esc(l.q)}</div></div>
+      <div class="fld"><div class="k">AIの回答</div><div class="v">${esc(l.a)}</div></div>
+      <div class="fld"><div class="k">出典</div><div class="v">${esc(l.src)}</div></div>
+      <div class="fld"><div class="k">評価／理由</div><div class="v">${esc(l.rate)}${l.reason?"／"+esc(l.reason):""}${l.note?"\n補足："+esc(l.note):""}</div></div>
+      <div class="fld edit">
+        <div class="fld"><div class="k">対応状況</div><select id="fStatus">${["自動回答済","回答なし","要対応","対応中","回答済","FAQ反映済"].map(s=>`<option ${s===l.status?"selected":""}>${s}</option>`).join("")}</select></div>
+        <div class="fld"><div class="k">担当部署</div><select id="fDept">${["人事部","総務部","経理部","営業企画部"].map(s=>`<option ${s===l.dept?"selected":""}>${s}</option>`).join("")}</select></div>
+        <div class="fld"><div class="k">本部の回答</div><textarea id="fAns" placeholder="店舗へ返す回答を入力">${esc(l.hq || (isTyphoon && canEdit ? TYPHOON_HQ_ANSWER : ""))}</textarea>
+          ${isTyphoon && canEdit && !l.hq ? `<div class="hint">デモ用に回答例を入力済みです。そのまま保存できます。</div>`:""}</div>
+        <div class="fld" style="margin-bottom:0"><label class="tg"><input type="checkbox" id="fFaq" ${l.status==="FAQ反映済"||(isTyphoon&&canEdit)?"checked":""}> 本部回答FAQに登録する（AIの参照先に追加）</label></div>
+      </div>
+      <p class="sp-note">保存すると、Power Automate が質問者へ Teams で回答を通知し、チェックがあれば FAQ リストに登録します。</p>`;
+    if(canEdit){ const st=$("#fStatus"); if(l.status==="要対応"||l.status==="対応中") st.value = "回答済"; }
+    $("#panel").classList.add("on"); $("#panelBg").classList.add("on");
+  }
+  function closePanel(){ $("#panel").classList.remove("on"); $("#panelBg").classList.remove("on"); S.openLog=null; }
+  $("#pClose").addEventListener("click", closePanel);
+  $("#pCancel").addEventListener("click", closePanel);
+  $("#panelBg").addEventListener("click", closePanel);
+  $("#pSave").addEventListener("click", ()=>{
+    const l = LOGS.find(x=>x.id===S.openLog); if(!l) return closePanel();
+    const prev = l.status;
+    const ans = $("#fAns").value.trim();
+    const faq = $("#fFaq").checked;
+    l.dept = $("#fDept").value;
+    l.status = $("#fStatus").value;
+    l.hq = ans;
+    tick(2);
+    closePanel();
+    const answered = ans && (l.status==="回答済"||l.status==="FAQ反映済") && !(prev==="回答済"||prev==="FAQ反映済");
+    if(faq && ans && !FAQ.some(f=>f.src===l.id)){
+      l.status="FAQ反映済";
+      FAQ.unshift({q: l.q.replace(/[？?]$/,""), a: ans, dept:l.dept, scope:"全員", dt:`${S.now.getFullYear()}/${S.now.getMonth()+1}/${S.now.getDate()}`, src:l.id, isNew:true});
+      if(l.q.includes("台風")||l.q.includes("臨時休業")) S.faqTyphoon=true;
+      renderFaq();
+      setTimeout(()=>toast("Power Automate（クラウドフロー）","本部回答FAQ に登録しました。AIの参照先に反映されます"),700);
+    }
+    if(answered || (faq && ans)){
+      S.wf.push({id:++MID, html:`<div class="row"><div class="av wf">W</div><div><div class="meta">Workflows　${hm(S.now)}</div><div class="bub">
+        <p><b>本部からの回答（受付番号 ${esc(l.id)}）</b></p>
+        <p style="color:#616161;font-size:12.5px">質問：${esc(l.q)}</p>
+        <p style="white-space:pre-wrap">${esc(ans)}</p>
+        <p style="color:#616161;font-size:12px">回答部署：${esc(l.dept)}　／　宛先：${esc(l.who)}（${esc(l.org)}）</p></div></div></div>`});
+      S.unreadWf++;
+      $("#pvWf").textContent = `本部からの回答（${l.id}）`;
+      toast("Power Automate（クラウドフロー）", `${l.who}さんへ Teams で回答を通知しました`);
+      stepDone("g3");
+    }
+    renderLog(); renderBadges();
+    if(S.chat==="wf") renderChat();
+  });
+
+  // ───────── FAQ ─────────
+  function renderFaq(){
+    $("#faqBody").innerHTML = FAQ.map(f=>`<tr class="${f.isNew?"new":""}"><td><b>${esc(f.q)}</b></td><td style="max-width:420px">${esc(f.a)}</td><td>${esc(f.dept)}</td>
+      <td>${f.scope==="全員"?`<span class="pill info">全員</span>`:`<span class="pill warn">本社のみ</span>`}</td><td style="white-space:nowrap">${esc(f.dt)}</td><td><span class="idlink">${esc(f.src)}</span></td></tr>`).join("");
+    FAQ.forEach(f=>{ if(f.isNew) setTimeout(()=>{f.isNew=false;},2500); });
+  }
+
+  // ───────── 初期化 ─────────
+  renderClock(); openChat("bot"); renderMails(); renderLog(); renderFaq(); renderBadges();
+})();
+</script>
+</body>
+</html>
